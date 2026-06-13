@@ -1,0 +1,133 @@
+name: DBSMproject
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sicily_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: sicily_monitoring
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - monitoring_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: sicily_phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: 123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - monitoring_network
+
+  mongodb:
+    image: mongo:7
+    container_name: sicily_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - monitoring_network
+
+  mongo-express:
+    image: mongo-express
+    container_name: sicily_mongo_express
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongodb
+    networks:
+      - monitoring_network
+
+  neo4j:
+    image: neo4j:5
+    container_name: sicily_neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/12345678
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - monitoring_network
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p 12345678 'RETURN 1;' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  vernemq:
+    image: vernemq/vernemq
+    container_name: sicily_vernemq
+    ports:
+      - "1883:1883"
+      - "8080:8080"
+    environment:
+      DOCKER_VERNEMQ_ACCEPT_EULA: "yes"
+      DOCKER_VERNEMQ_ALLOW_ANONYMOUS: "on"
+    volumes:
+      - vernemq_data:/var/lib/vernemq
+    networks:
+      - monitoring_network
+
+  subscriber:
+    build: .
+    container_name: sicily_subscriber
+    command: python subscriber.py
+    environment:
+      MQTT_BROKER: vernemq
+      MYSQL_HOST: mysql
+      MONGO_HOST: mongodb
+      NEO4J_URI: bolt://neo4j:7687
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      neo4j:
+        condition: service_healthy
+      vernemq:
+        condition: service_started
+    networks:
+      - monitoring_network
+
+  publisher:
+    build: .
+    container_name: sicily_publisher
+    command: python publisher.py
+    environment:
+      MQTT_BROKER: vernemq
+      MESSAGE_LIMIT: 30
+      PUBLISH_INTERVAL: 1
+    depends_on:
+      - subscriber
+    networks:
+      - monitoring_network
+
+volumes:
+  mysql_data:
+  mongodb_data:
+  neo4j_data:
+  vernemq_data:
+
+networks:
+  monitoring_network:
+    name: sicily_monitoring_network
