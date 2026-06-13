@@ -20,13 +20,13 @@ def sensor_id(prefix):
     return f"{prefix}-{random.randint(1, 6)}"
 
 
-def risk_from_value(value, medium_limit, high_limit):
-    if value >= high_limit:
+def risk_from_value(value, medium, high):
+    if value >= high:
         return "high"
-    if value >= medium_limit:
+    elif value >= medium:
         return "medium"
     return "low"
-
+    
 
 def generate_seismic_data():
     magnitude = round(random.uniform(0.5, 5.5), 2)

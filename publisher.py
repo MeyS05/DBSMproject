@@ -1,7 +1,6 @@
 import json
 import os
 import time
-
 import paho.mqtt.client as mqtt
 
 from sensors_data import (
@@ -12,29 +11,24 @@ from sensors_data import (
 )
 
 BROKER = os.getenv("MQTT_BROKER", "vernemq")
-PORT   = int(os.getenv("MQTT_PORT", 1883))
-LIMIT  = int(os.getenv("MESSAGE_LIMIT", 30))
+PORT = int(os.getenv("MQTT_PORT", 1883))
+LIMIT = int(os.getenv("MESSAGE_LIMIT", 30))
 INTERVAL = float(os.getenv("PUBLISH_INTERVAL", 1))
 
-TOPIC_SEISMIC           = "sicily/seismic"
-TOPIC_GROUND_TEMPERATURE = "sicily/ground_temperature"
-TOPIC_GAS_EMISSIONS     = "sicily/gas_emissions"
-TOPIC_SENSOR_NETWORK    = "sicily/sensor_network"
+TOPICS = {
+    "seismic": "sicily/seismic",
+    "temperature": "sicily/ground_temperature",
+    "gas": "sicily/gas_emissions",
+    "network": "sicily/sensor_network",
+}
 
 
 def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("Connected to MQTT Broker!")
-    else:
-        print(f"Failed to connect, return code {rc}")
+    print("Connected" if rc == 0 else f"Failed: {rc}")
 
 
 def publish(client, topic, data):
-    result = client.publish(topic, json.dumps(data), qos=1)
-    if result[0] == 0:
-        print(f"Sent {topic}: {data}")
-    else:
-        print(f"Failed to send to {topic}")
+    client.publish(topic, json.dumps(data), qos=1)
 
 
 client = mqtt.Client(client_id="sicily-publisher")
@@ -42,19 +36,14 @@ client.on_connect = on_connect
 client.connect(BROKER, PORT)
 client.loop_start()
 
-msg_count = 0
-while True:
+for i in range(LIMIT):
     time.sleep(INTERVAL)
 
-    publish(client, TOPIC_SEISMIC,            generate_seismic_data())
-    publish(client, TOPIC_GROUND_TEMPERATURE, generate_ground_temperature_data())
-    publish(client, TOPIC_GAS_EMISSIONS,      generate_gas_emission_data())
-    publish(client, TOPIC_SENSOR_NETWORK,     generate_sensor_network_data())
-
-    msg_count += 1
-    if LIMIT and msg_count >= LIMIT:
-        break
+    publish(client, TOPICS["seismic"], generate_seismic_data())
+    publish(client, TOPICS["temperature"], generate_ground_temperature_data())
+    publish(client, TOPICS["gas"], generate_gas_emission_data())
+    publish(client, TOPICS["network"], generate_sensor_network_data())
 
 client.loop_stop()
 client.disconnect()
-print("Publisher disconnected.")
+print("Publisher stopped")
