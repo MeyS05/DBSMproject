@@ -88,40 +88,6 @@ services:
     networks:
       - monitoring_network
 
-  subscriber:
-    build: .
-    container_name: sicily_subscriber
-    command: python subscriber.py
-    environment:
-      MQTT_BROKER: vernemq
-      MYSQL_HOST: mysql
-      MONGO_HOST: mongodb
-      NEO4J_URI: bolt://neo4j:7687
-    depends_on:
-      mysql:
-        condition: service_healthy
-      mongodb:
-        condition: service_started
-      neo4j:
-        condition: service_healthy
-      vernemq:
-        condition: service_started
-    networks:
-      - monitoring_network
-
-  publisher:
-    build: .
-    container_name: sicily_publisher
-    command: python publisher.py
-    environment:
-      MQTT_BROKER: vernemq
-      MESSAGE_LIMIT: 30
-      PUBLISH_INTERVAL: 1
-    depends_on:
-      - subscriber
-    networks:
-      - monitoring_network
-
 volumes:
   mysql_data:
   mongodb_data:
