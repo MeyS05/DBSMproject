@@ -71,7 +71,7 @@ python subscriber.py
 python publisher.py
 ```
 
-The publisher sends 30 cycles of simulated data across all four topics, then stops automatically. The subscriber keeps running and storing messages until stopped manually (Ctrl+C).
+The publisher sends 30 cycles of simulated data across all four topics, then stops automatically. The subscriber keeps running and storing messages until stopped manually.
 
 To stop the system:
 
