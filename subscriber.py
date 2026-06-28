@@ -1,25 +1,24 @@
-import os
 import json
 import mysql.connector
 import paho.mqtt.client as mqtt
 from pymongo import MongoClient
 from neo4j import GraphDatabase
 
-mongo_conn = MongoClient(f"mongodb://{os.getenv('MONGO_HOST', 'mongodb')}:27017/")
+mongo_conn = MongoClient("mongodb://localhost:27017/")
+print("Connected to MongoDB")
 
 mysql_conn = mysql.connector.connect(
-    host=os.getenv("MYSQL_HOST", "mysql"),
+    host="localhost",
     user="root",
     password="123456",
     database="sicily_monitoring",
 )
+print("Connected to MySQL")
 
-neo4j_conn = GraphDatabase.driver(
-    os.getenv("NEO4J_URI", "bolt://neo4j:7687"),
-    auth=("neo4j", "12345678")
-)
+neo4j_conn = GraphDatabase.driver("bolt://localhost:7687", auth=("neo4j", "12345678"))
+print("Connected to Neo4j")
 
-BROKER = os.getenv("MQTT_BROKER", "vernemq")
+BROKER = "localhost"
 PORT = 1883
 
 TOPICS = {
@@ -47,11 +46,9 @@ def mysql_insert_seismic(data):
     mysql_conn.commit()
     cursor.close()
 
-
 def mysql_insert_alert(data, alert_type, message):
     if data["risk_level"] == "low":
         return
-
     cursor = mysql_conn.cursor()
     cursor.execute("""
         INSERT INTO alerts
@@ -82,7 +79,6 @@ def neo4j_insert(data):
                 s1.timestamp = $timestamp
         """, data)
 
-
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Connected to MQTT")
@@ -96,22 +92,20 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     try:
         data = json.loads(msg.payload.decode())
+        print(f"{msg.topic} -> {msg.payload.decode()}")
 
         if msg.topic == TOPICS["seismic"]:
             mysql_insert_seismic(data)
-            mysql_insert_alert(data, "seismic",
-                f"Magnitude {data['magnitude']}")
+            mysql_insert_alert(data, "seismic", f"Magnitude {data['magnitude']}")
             mongo_insert("seismic_archive", data)
 
         elif msg.topic == TOPICS["temp"]:
             mongo_insert("temperature", data)
-            mysql_insert_alert(data, "temperature",
-                f"{data['temperature_c']} C")
+            mysql_insert_alert(data, "temperature", f"{data['temperature_c']} C")
 
         elif msg.topic == TOPICS["gas"]:
             mongo_insert("gas", data)
-            mysql_insert_alert(data, "gas",
-                f"SO2 {data['so2_ppm']} ppm")
+            mysql_insert_alert(data, "gas", f"SO2 {data['so2_ppm']} ppm")
 
         elif msg.topic == TOPICS["network"]:
             neo4j_insert(data)
@@ -123,7 +117,6 @@ def on_message(client, userdata, msg):
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-
 client.connect(BROKER, PORT, 60)
 
 try:
