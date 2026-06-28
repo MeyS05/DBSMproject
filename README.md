@@ -20,6 +20,8 @@ The data is simulated, so no physical sensors are required.
 3. `subscriber.py` receives messages from MQTT topics.
 4. The subscriber processes each message and stores it in the correct database.
 
+The databases, broker, and admin dashboards run in Docker. `publisher.py` and `subscriber.py` run locally with Python, connecting to the Dockerized services through their published ports on `localhost`.
+
 ## MQTT Topics and Storage
 
 | MQTT topic | Example data | Main database |
@@ -45,13 +47,31 @@ Medium and high-risk seismic, temperature, and gas events are also saved in the 
 
 ## How to Run
 
-Start all containers:
+1. Start the databases, broker, and dashboards:
 
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
-The publisher sends 30 cycles of simulated data and then stops. The subscriber keeps running and storing messages.
+2. Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Start the subscriber (keeps running, storing messages):
+
+```bash
+python subscriber.py
+```
+
+4. In a separate terminal, start the publisher:
+
+```bash
+python publisher.py
+```
+
+The publisher sends 30 cycles of simulated data across all four topics, then stops automatically. The subscriber keeps running and storing messages until stopped manually (Ctrl+C).
 
 To stop the system:
 
@@ -97,8 +117,7 @@ SELECT * FROM alerts ORDER BY id DESC LIMIT 10;
 
 ## Files
 
-- `docker-compose.yaml`: defines all containers
-- `Dockerfile`: builds the Python publisher/subscriber image
+- `docker-compose.yaml`: defines the database, broker, and dashboard containers
 - `requirements.txt`: Python libraries
 - `sensors_data.py`: simulated Sicily sensor data
 - `publisher.py`: publishes data to MQTT
