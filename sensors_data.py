@@ -1,7 +1,6 @@
 import random
 from datetime import datetime
 
-
 LOCATIONS = [
     "Catania",
     "Etna Nord",
@@ -11,14 +10,11 @@ LOCATIONS = [
     "Siracusa",
 ]
 
-
 def current_timestamp():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-
 def sensor_id(prefix):
     return f"{prefix}-{random.randint(1, 6)}"
-
 
 def risk_from_value(value, medium, high):
     if value >= high:
@@ -26,7 +22,6 @@ def risk_from_value(value, medium, high):
     elif value >= medium:
         return "medium"
     return "low"
-    
 
 def generate_seismic_data():
     magnitude = round(random.uniform(0.5, 5.5), 2)
@@ -41,7 +36,6 @@ def generate_seismic_data():
         "timestamp": current_timestamp(),
     }
 
-
 def generate_ground_temperature_data():
     temperature = round(random.uniform(12, 95), 2)
     return {
@@ -51,7 +45,6 @@ def generate_ground_temperature_data():
         "risk_level": risk_from_value(temperature, 55, 75),
         "timestamp": current_timestamp(),
     }
-
 
 def generate_gas_emission_data():
     co2_ppm = round(random.uniform(350, 2500), 2)
@@ -65,13 +58,11 @@ def generate_gas_emission_data():
         "timestamp": current_timestamp(),
     }
 
-
 def generate_sensor_network_data():
     source = sensor_id("NODE")
     target = sensor_id("NODE")
     while target == source:
         target = sensor_id("NODE")
-
     return {
         "source_sensor": source,
         "target_sensor": target,
