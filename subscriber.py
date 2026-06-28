@@ -74,8 +74,8 @@ def mongo_insert(collection, data):
 def neo4j_insert(data):
     with neo4j_conn.session() as session:
         session.run("""
-            MERGE (s1:Sensor {sensor_id: $source})
-            MERGE (s2:Sensor {sensor_id: $target})
+            MERGE (s1:Sensor {sensor_id: $source_sensor})
+            MERGE (s2:Sensor {sensor_id: $target_sensor})
             MERGE (s1)-[:CONNECTED_TO]->(s2)
             SET s1.location = $location,
                 s2.location = $location,
