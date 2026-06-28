@@ -1,5 +1,4 @@
 import json
-import os
 import time
 import paho.mqtt.client as mqtt
 
@@ -10,10 +9,10 @@ from sensors_data import (
     generate_sensor_network_data,
 )
 
-BROKER = os.getenv("MQTT_BROKER", "vernemq")
-PORT = int(os.getenv("MQTT_PORT", 1883))
-LIMIT = int(os.getenv("MESSAGE_LIMIT", 30))
-INTERVAL = float(os.getenv("PUBLISH_INTERVAL", 1))
+BROKER = "localhost"
+PORT = 1883
+LIMIT = 30
+INTERVAL = 1
 
 TOPICS = {
     "seismic": "sicily/seismic",
